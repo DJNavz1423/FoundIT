@@ -1,25 +1,30 @@
 package com.example.lostandfound.screens
 
 import android.util.Log
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.lostandfound.models.Post
 import com.example.lostandfound.viewmodels.PostViewModel
+import com.example.lostandfound.viewmodels.base64ToBitmap
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -41,6 +46,8 @@ fun ProfileScreen(
     var userEmail by remember { mutableStateOf("") }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var postToDelete by remember { mutableStateOf<Post?>(null) }
     var editNameText by remember { mutableStateOf("") }
     var isUpdating by remember { mutableStateOf(false) }
     var updateMessage by remember { mutableStateOf<String?>(null) }
@@ -53,33 +60,27 @@ fun ProfileScreen(
     // Load user info and posts
     LaunchedEffect(Unit) {
         Log.d("ProfileScreen", "🚀 ProfileScreen LaunchedEffect triggered")
-        Log.d("ProfileScreen", "Current user ID: $currentUserId")
 
         currentUserId?.let { userId ->
-            // Load user info
             try {
                 val doc = firestore.collection("users").document(userId).get().await()
                 userName = doc.getString("displayName") ?: "User"
                 userEmail = doc.getString("email") ?: ""
-                Log.d("ProfileScreen", "✅ User info loaded: $userName ($userEmail)")
+                Log.d("ProfileScreen", "✅ User info loaded: $userName")
             } catch (e: Exception) {
                 Log.e("ProfileScreen", "❌ Error loading user info: ${e.message}")
             }
 
-            // Direct Firebase check
             try {
                 val snapshot = firestore.collection("posts")
                     .whereEqualTo("userId", userId)
                     .get()
                     .await()
-
                 directPostCount = snapshot.documents.size
-                Log.d("ProfileScreen", "📊 DIRECT Firebase: ${snapshot.documents.size} posts")
             } catch (e: Exception) {
                 Log.e("ProfileScreen", "❌ Direct query failed: ${e.message}")
             }
 
-            // Load through ViewModel
             viewModel.loadMyPosts()
         }
     }
@@ -98,7 +99,6 @@ fun ProfileScreen(
                 title = { Text("Profile") },
                 actions = {
                     IconButton(onClick = {
-                        Log.d("ProfileScreen", "🔄 Manual refresh clicked")
                         scope.launch { viewModel.loadMyPosts() }
                     }) {
                         Icon(Icons.Default.Refresh, "Refresh")
@@ -111,9 +111,7 @@ fun ProfileScreen(
         },
         snackbarHost = {
             updateMessage?.let { message ->
-                Snackbar(
-                    modifier = Modifier.padding(16.dp)
-                ) {
+                Snackbar(modifier = Modifier.padding(16.dp)) {
                     Text(message)
                 }
             }
@@ -121,10 +119,7 @@ fun ProfileScreen(
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = isLoading,
-            onRefresh = {
-                Log.d("ProfileScreen", "🔄 Pull to refresh triggered")
-                scope.launch { viewModel.loadMyPosts() }
-            },
+            onRefresh = { scope.launch { viewModel.loadMyPosts() } },
             state = pullToRefreshState,
             modifier = Modifier.padding(padding)
         ) {
@@ -138,7 +133,6 @@ fun ProfileScreen(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Name with Edit Button
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.Center
@@ -171,19 +165,11 @@ fun ProfileScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        Row {
-                            Text(
-                                text = "${posts.size} Posts",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = " (Direct: $directPostCount)",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
+                        Text(
+                            text = "${posts.size} Posts",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
@@ -200,46 +186,38 @@ fun ProfileScreen(
                 }
 
                 // Posts Header
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "My Posts",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    if (isLoading) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                    }
-                }
+                Text(
+                    text = "My Posts",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(16.dp)
+                )
 
-                // Posts List or Empty State
+                // Posts List
                 if (posts.isEmpty() && !isLoading) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(32.dp)
-                        ) {
-                            Text(
-                                text = "No posts yet",
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = "No posts yet",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 } else {
                     LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 8.dp)
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                     ) {
                         items(posts, key = { it.id }) { post ->
-                            PostItem(post, onClick = { onNavigateToPostDetail(post.id) })
+                            ProfilePostItem(
+                                post = post,
+                                onClick = { onNavigateToPostDetail(post.id) },
+                                onDelete = {
+                                    postToDelete = post
+                                    showDeleteDialog = true
+                                }
+                            )
                         }
                     }
                 }
@@ -247,33 +225,114 @@ fun ProfileScreen(
         }
     }
 
+    // Delete Confirmation Dialog
+    if (showDeleteDialog && postToDelete != null) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isUpdating) {
+                    showDeleteDialog = false
+                    postToDelete = null
+                }
+            },
+            icon = {
+                Icon(
+                    Icons.Default.Delete,
+                    "Delete Post",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text("Delete Post?") },
+            text = {
+                Column {
+                    Text("Are you sure you want to delete this post?")
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "\"${postToDelete?.title}\"",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "This action cannot be undone.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.error
+                    )
+
+                    if (isUpdating) {
+                        Spacer(Modifier.height(8.dp))
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            isUpdating = true
+                            try {
+                                postToDelete?.let { post ->
+                                    firestore.collection("posts")
+                                        .document(post.id)
+                                        .delete()
+                                        .await()
+
+                                    updateMessage = "✅ Post deleted successfully"
+                                    showDeleteDialog = false
+                                    postToDelete = null
+
+                                    // Reload posts
+                                    viewModel.loadMyPosts()
+
+                                    Log.d("ProfileScreen", "✅ Post deleted: ${post.id}")
+                                }
+                            } catch (e: Exception) {
+                                updateMessage = "❌ Failed to delete: ${e.message}"
+                                Log.e("ProfileScreen", "❌ Delete error: ${e.message}")
+                            } finally {
+                                isUpdating = false
+                            }
+                        }
+                    },
+                    enabled = !isUpdating,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        postToDelete = null
+                    },
+                    enabled = !isUpdating
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     // Edit Name Dialog
     if (showEditNameDialog) {
         AlertDialog(
-            onDismissRequest = {
-                if (!isUpdating) showEditNameDialog = false
-            },
+            onDismissRequest = { if (!isUpdating) showEditNameDialog = false },
             icon = { Icon(Icons.Default.Edit, "Edit Name") },
             title = { Text("Edit Display Name") },
             text = {
                 Column {
-                    Text(
-                        "Enter your new display name:",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Text("Enter your new display name:")
                     Spacer(Modifier.height(16.dp))
 
                     OutlinedTextField(
                         value = editNameText,
-                        onValueChange = {
-                            if (it.length <= 30) editNameText = it
-                        },
+                        onValueChange = { if (it.length <= 30) editNameText = it },
                         label = { Text("Display Name") },
                         singleLine = true,
                         enabled = !isUpdating,
-                        supportingText = {
-                            Text("${editNameText.length}/30 characters")
-                        }
+                        supportingText = { Text("${editNameText.length}/30 characters") }
                     )
 
                     if (isUpdating) {
@@ -287,20 +346,11 @@ fun ProfileScreen(
                     onClick = {
                         scope.launch {
                             val newName = editNameText.trim()
-
-                            // Validation
                             when {
-                                newName.isEmpty() -> {
-                                    updateMessage = "Name cannot be empty"
-                                }
-                                newName.length < 2 -> {
-                                    updateMessage = "Name must be at least 2 characters"
-                                }
-                                newName == userName -> {
-                                    showEditNameDialog = false
-                                }
+                                newName.isEmpty() -> updateMessage = "Name cannot be empty"
+                                newName.length < 2 -> updateMessage = "Name must be at least 2 characters"
+                                newName == userName -> showEditNameDialog = false
                                 else -> {
-                                    // Update in Firestore
                                     isUpdating = true
                                     try {
                                         currentUserId?.let { userId ->
@@ -309,16 +359,12 @@ fun ProfileScreen(
                                                 .update("displayName", newName)
                                                 .await()
 
-                                            // Update local state
                                             userName = newName
                                             updateMessage = "✅ Name updated successfully!"
                                             showEditNameDialog = false
-
-                                            Log.d("ProfileScreen", "✅ Display name updated to: $newName")
                                         }
                                     } catch (e: Exception) {
-                                        updateMessage = "❌ Failed to update name: ${e.message}"
-                                        Log.e("ProfileScreen", "❌ Error updating name: ${e.message}")
+                                        updateMessage = "❌ Failed to update: ${e.message}"
                                     } finally {
                                         isUpdating = false
                                     }
@@ -363,5 +409,116 @@ fun ProfileScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+fun ProfilePostItem(
+    post: Post,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        elevation = CardDefaults.cardElevation(2.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            // Header with Delete Button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Surface(
+                        color = if (post.type == "LOST") Color(0xFFEF4444) else Color(0xFF10B981),
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Text(
+                            text = post.type,
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    Spacer(Modifier.width(8.dp))
+
+                    if (post.status == "RESOLVED") {
+                        Surface(
+                            color = Color(0xFF10B981),
+                            shape = MaterialTheme.shapes.small
+                        ) {
+                            Text(
+                                text = "RESOLVED",
+                                color = Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
+
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete Post",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            // Clickable content area
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onClick)
+            ) {
+                // Image
+                if (post.imageBase64.isNotEmpty()) {
+                    val bitmap = base64ToBitmap(post.imageBase64)
+                    bitmap?.let {
+                        Image(
+                            bitmap = it.asImageBitmap(),
+                            contentDescription = post.title,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+
+                // Content
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = post.title,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+
+                    Text(
+                        text = post.description,
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2
+                    )
+                }
+            }
+        }
     }
 }
