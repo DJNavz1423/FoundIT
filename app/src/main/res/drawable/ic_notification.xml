@@ -5,25 +5,24 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
 
-    <!-- Outer Lens -->
+    <!-- Outer lens with smaller transparent hole -->
     <path
-        android:fillColor="#000000"
-        android:pathData="M10,4
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="
+            M10,4
             A6,6 0 1,1 10,16
             A6,6 0 1,1 10,4
-            Z"/>
+            Z
 
-    <!-- Inner Lens (black circle, bigger) -->
-    <path
-        android:fillColor="#ffffff"
-        android:pathData="M10,5
-            A5,5 0 1,1 10,15
-            A5,5 0 1,1 10,5
-            Z"/>
+            M10,6
+            A4,4 0 1,0 10,14
+            A4,4 0 1,0 10,6
+            Z" />
 
     <!-- Handle -->
     <path
-        android:fillColor="#000000"
+        android:fillColor="#FFFFFF"
         android:pathData="M15,14
             L20,19
             A1,1 0 0,1 19,21
