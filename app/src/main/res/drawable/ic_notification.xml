@@ -7,7 +7,7 @@
 
     <!-- Outer Lens -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#000000"
         android:pathData="M10,4
             A6,6 0 1,1 10,16
             A6,6 0 1,1 10,4
@@ -15,7 +15,7 @@
 
     <!-- Inner Lens (black circle, bigger) -->
     <path
-        android:fillColor="#000000"
+        android:fillColor="#ffffff"
         android:pathData="M10,5
             A5,5 0 1,1 10,15
             A5,5 0 1,1 10,5
@@ -23,7 +23,7 @@
 
     <!-- Handle -->
     <path
-        android:fillColor="#FFFFFF"
+        android:fillColor="#000000"
         android:pathData="M15,14
             L20,19
             A1,1 0 0,1 19,21

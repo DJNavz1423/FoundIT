@@ -1,6 +1,9 @@
 package com.example.lostandfound.screens
 
+import android.net.Uri
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -18,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +29,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lostandfound.models.Post
 import com.example.lostandfound.viewmodels.PostViewModel
 import com.example.lostandfound.viewmodels.base64ToBitmap
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.os.Build
+import android.provider.MediaStore
+import android.util.Base64
+import java.io.ByteArrayOutputStream
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -41,14 +51,21 @@ fun ProfileScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val pullToRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     var userName by remember { mutableStateOf("User") }
     var userEmail by remember { mutableStateOf("") }
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showEditNameDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showEditPostDialog by remember { mutableStateOf(false) }
     var postToDelete by remember { mutableStateOf<Post?>(null) }
+    var postToEdit by remember { mutableStateOf<Post?>(null) }
     var editNameText by remember { mutableStateOf("") }
+    var editPostTitle by remember { mutableStateOf("") }
+    var editPostDescription by remember { mutableStateOf("") }
+    var editPostImageUri by remember { mutableStateOf<Uri?>(null) }
+    var editPostImageBase64 by remember { mutableStateOf("") }
     var isUpdating by remember { mutableStateOf(false) }
     var updateMessage by remember { mutableStateOf<String?>(null) }
     var directPostCount by remember { mutableIntStateOf(0) }
@@ -56,6 +73,31 @@ fun ProfileScreen(
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
     val currentUserId = auth.currentUser?.uid
+
+    // Image picker for editing
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            editPostImageUri = it
+            try {
+                val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, it))
+                } else {
+                    @Suppress("DEPRECATION")
+                    MediaStore.Images.Media.getBitmap(context.contentResolver, it)
+                }
+
+                val outputStream = ByteArrayOutputStream()
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+                val byteArray = outputStream.toByteArray()
+                editPostImageBase64 = Base64.encodeToString(byteArray, Base64.DEFAULT)
+            } catch (e: Exception) {
+                Log.e("ProfileScreen", "Error converting image: ${e.message}")
+                updateMessage = "Failed to load image"
+            }
+        }
+    }
 
     // Load user info and posts
     LaunchedEffect(Unit) {
@@ -213,6 +255,14 @@ fun ProfileScreen(
                             ProfilePostItem(
                                 post = post,
                                 onClick = { onNavigateToPostDetail(post.id) },
+                                onEdit = {
+                                    postToEdit = post
+                                    editPostTitle = post.title
+                                    editPostDescription = post.description
+                                    editPostImageBase64 = post.imageBase64
+                                    editPostImageUri = null
+                                    showEditPostDialog = true
+                                },
                                 onDelete = {
                                     postToDelete = post
                                     showDeleteDialog = true
@@ -223,6 +273,167 @@ fun ProfileScreen(
                 }
             }
         }
+    }
+
+    // Edit Post Dialog
+    if (showEditPostDialog && postToEdit != null) {
+        AlertDialog(
+            onDismissRequest = { if (!isUpdating) showEditPostDialog = false },
+            icon = { Icon(Icons.Default.Edit, "Edit Post") },
+            title = { Text("Edit Post") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 500.dp)
+                ) {
+                    OutlinedTextField(
+                        value = editPostTitle,
+                        onValueChange = { if (it.length <= 100) editPostTitle = it },
+                        label = { Text("Title") },
+                        singleLine = true,
+                        enabled = !isUpdating,
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = { Text("${editPostTitle.length}/100") }
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    OutlinedTextField(
+                        value = editPostDescription,
+                        onValueChange = { if (it.length <= 500) editPostDescription = it },
+                        label = { Text("Description") },
+                        minLines = 3,
+                        maxLines = 5,
+                        enabled = !isUpdating,
+                        modifier = Modifier.fillMaxWidth(),
+                        supportingText = { Text("${editPostDescription.length}/500") }
+                    )
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Image Preview
+                    if (editPostImageUri != null || editPostImageBase64.isNotEmpty()) {
+                        val bitmap = if (editPostImageUri != null) {
+                            base64ToBitmap(editPostImageBase64)
+                        } else {
+                            base64ToBitmap(editPostImageBase64)
+                        }
+
+                        bitmap?.let {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(150.dp)
+                            ) {
+                                Image(
+                                    bitmap = it.asImageBitmap(),
+                                    contentDescription = "Post Image",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            Spacer(Modifier.height(8.dp))
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { imagePickerLauncher.launch("image/*") },
+                            enabled = !isUpdating,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Image, contentDescription = null)
+                            Spacer(Modifier.width(4.dp))
+                            Text("Change Image")
+                        }
+
+                        if (editPostImageBase64.isNotEmpty()) {
+                            OutlinedButton(
+                                onClick = {
+                                    editPostImageBase64 = ""
+                                    editPostImageUri = null
+                                },
+                                enabled = !isUpdating,
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.error
+                                )
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = null)
+                            }
+                        }
+                    }
+
+                    if (isUpdating) {
+                        Spacer(Modifier.height(8.dp))
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        scope.launch {
+                            val title = editPostTitle.trim()
+                            val description = editPostDescription.trim()
+
+                            when {
+                                title.isEmpty() -> updateMessage = "Title cannot be empty"
+                                description.isEmpty() -> updateMessage = "Description cannot be empty"
+                                else -> {
+                                    isUpdating = true
+                                    try {
+                                        postToEdit?.let { post ->
+                                            val updates = hashMapOf<String, Any>(
+                                                "title" to title,
+                                                "description" to description,
+                                                "imageBase64" to editPostImageBase64
+                                            )
+
+                                            firestore.collection("posts")
+                                                .document(post.id)
+                                                .update(updates)
+                                                .await()
+
+                                            updateMessage = "✅ Post updated successfully"
+                                            showEditPostDialog = false
+                                            postToEdit = null
+
+                                            // Reload posts
+                                            viewModel.loadMyPosts()
+
+                                            Log.d("ProfileScreen", "✅ Post updated: ${post.id}")
+                                        }
+                                    } catch (e: Exception) {
+                                        updateMessage = "❌ Failed to update: ${e.message}"
+                                        Log.e("ProfileScreen", "❌ Update error: ${e.message}")
+                                    } finally {
+                                        isUpdating = false
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    enabled = !isUpdating && editPostTitle.trim().isNotEmpty() && editPostDescription.trim().isNotEmpty()
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showEditPostDialog = false
+                        postToEdit = null
+                    },
+                    enabled = !isUpdating
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     // Delete Confirmation Dialog
@@ -416,6 +627,7 @@ fun ProfileScreen(
 fun ProfilePostItem(
     post: Post,
     onClick: () -> Unit,
+    onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
@@ -425,7 +637,7 @@ fun ProfilePostItem(
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            // Header with Delete Button
+            // Header with Edit and Delete Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -468,16 +680,30 @@ fun ProfilePostItem(
                     }
                 }
 
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier.size(36.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Delete Post",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
-                    )
+                Row {
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit Post",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Delete Post",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 
