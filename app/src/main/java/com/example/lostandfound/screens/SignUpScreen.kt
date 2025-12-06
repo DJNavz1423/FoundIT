@@ -8,10 +8,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -20,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lostandfound.viewmodels.AuthState
 import com.example.lostandfound.viewmodels.AuthViewModel
+import com.example.lostandfound.viewmodels.EmailValidationState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,8 +39,10 @@ fun SignUpScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    var showEmailValidationDialog by remember { mutableStateOf(false) }
 
     val authState by viewModel.authState.collectAsState()
+    val emailValidationState by viewModel.emailValidationState.collectAsState()
 
     LaunchedEffect(authState) {
         when (authState) {
@@ -44,6 +50,95 @@ fun SignUpScreen(
             is AuthState.Error -> errorMessage = (authState as AuthState.Error).message
             else -> {}
         }
+    }
+
+    // Show validation dialog when email validation completes
+    LaunchedEffect(emailValidationState) {
+        when (emailValidationState) {
+            is EmailValidationState.Valid,
+            is EmailValidationState.Invalid -> {
+                showEmailValidationDialog = true
+            }
+            else -> {}
+        }
+    }
+
+    // Email Validation Dialog
+    if (showEmailValidationDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showEmailValidationDialog = false
+                viewModel.resetEmailValidation()
+            },
+            icon = {
+                Icon(
+                    imageVector = if (emailValidationState is EmailValidationState.Valid)
+                        Icons.Default.CheckCircle
+                    else
+                        Icons.Default.Error,
+                    contentDescription = null,
+                    tint = if (emailValidationState is EmailValidationState.Valid)
+                        Color(0xFF4CAF50)
+                    else
+                        MaterialTheme.colorScheme.error
+                )
+            },
+            title = {
+                Text(
+                    text = if (emailValidationState is EmailValidationState.Valid)
+                        "Email Verified"
+                    else
+                        "Email Validation Failed"
+                )
+            },
+            text = {
+                Text(
+                    text = when (emailValidationState) {
+                        is EmailValidationState.Valid ->
+                            "Your email has been verified. You can continue with the registration."
+                        is EmailValidationState.Invalid ->
+                            (emailValidationState as EmailValidationState.Invalid).message
+                        else -> ""
+                    }
+                )
+            },
+            confirmButton = {
+                if (emailValidationState is EmailValidationState.Valid) {
+                    TextButton(
+                        onClick = {
+                            showEmailValidationDialog = false
+                            // Proceed with sign up
+                            when {
+                                name.isEmpty() ->
+                                    errorMessage = "Please enter your name"
+                                password.isEmpty() ->
+                                    errorMessage = "Please enter a password"
+                                password != confirmPassword ->
+                                    errorMessage = "Passwords don't match"
+                                password.length < 6 ->
+                                    errorMessage = "Password must be at least 6 characters"
+                                else -> {
+                                    errorMessage = ""
+                                    viewModel.signUp(name, email, password)
+                                }
+                            }
+                        }
+                    ) {
+                        Text("Continue")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showEmailValidationDialog = false
+                        viewModel.resetEmailValidation()
+                    }
+                ) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -87,10 +182,14 @@ fun SignUpScreen(
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = {
+                    email = it
+                    errorMessage = ""
+                    viewModel.resetEmailValidation()
+                },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -163,27 +262,46 @@ fun SignUpScreen(
             Button(
                 onClick = {
                     when {
-                        name.isEmpty() || email.isEmpty() || password.isEmpty() ->
-                            errorMessage = "Please fill all fields"
+                        name.isEmpty() ->
+                            errorMessage = "Please enter your name"
+                        email.isEmpty() ->
+                            errorMessage = "Please enter your email"
+                        password.isEmpty() ->
+                            errorMessage = "Please enter a password"
                         password != confirmPassword ->
                             errorMessage = "Passwords don't match"
                         password.length < 6 ->
                             errorMessage = "Password must be at least 6 characters"
-                        else -> viewModel.signUp(name, email, password)
+                        else -> {
+                            errorMessage = ""
+                            viewModel.validateEmail(email)
+                        }
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = authState !is AuthState.Loading
+                enabled = authState !is AuthState.Loading &&
+                        emailValidationState !is EmailValidationState.Validating
             ) {
-                if (authState is AuthState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Sign Up", fontSize = 16.sp)
+                when {
+                    authState is AuthState.Loading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+                    emailValidationState is EmailValidationState.Validating -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Validating Email...", fontSize = 16.sp)
+                    }
+                    else -> {
+                        Text("Sign Up", fontSize = 16.sp)
+                    }
                 }
             }
 
