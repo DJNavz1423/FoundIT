@@ -1,18 +1,13 @@
 # 📱 FoundIT - Lost & Found Mobile Application
 
 ![FoundIT](https://img.shields.io/badge/FoundIT-Lost%20%26%20Found-blue)
-![Kotlin](https://img.shields.io/badge/Kotlin-1.9.0-purple)
-![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-1.5.0-blue)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.2.21-purple)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-1.9.0-blue)
 ![Firebase](https://img.shields.io/badge/Firebase-Latest-orange)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Platform](https://img.shields.io/badge/Platform-Android-brightgreen)
 
 A modern Android lost-and-found application built with Kotlin and Jetpack Compose. Originally developed for educational institutions, designed to scale for any community. Features real-time chat, notifications, and smart filtering - all built with 100% free-tier services.
-
-## ✨ Live Demo
-
-- **APK Download:** [Download FoundIT](#)
-- **Demo Video:** [Watch Demo](#)
 
 ## 🎯 Features
 
@@ -29,8 +24,6 @@ A modern Android lost-and-found application built with Kotlin and Jetpack Compos
 - 🖼️ **Base64 Image Storage** - No Firebase Storage costs!
 - 🔴 **Unread Message Badges** - Visual indicators for new chats
 - ✏️ **Profile CRUD** - Edit name & delete posts
-- 👁️ **Password Toggle** - Show/hide password during login
-- 🎨 **Custom UI** - Material Design 3 with modern animations
 
 ### 🛡️ Technical Highlights
 
@@ -88,27 +81,6 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Jetpack       │    │     MVVM        │    │    Firebase     │
-│   Compose UI    │◄───┤   ViewModel     │◄───┤   Repository    │
-│                 │    │                 │    │                 │
-│ • Screens       │    │ • State         │    │ • Firestore     │
-│ • Components    │    │ • Logic         │    │ • Auth          │
-│ • Navigation    │    │ • Events        │    │ • Storage       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                        │                       │
-         └────────────────────────┼───────────────────────┘
-                                  ▼
-                       ┌─────────────────┐
-                       │    Node.js      │
-                       │  Server (FCM)   │
-                       │  Render.com     │
-                       └─────────────────┘
-```
-
 ## 🛠️ Technology Stack
 
 | Layer | Technology | Purpose |
@@ -122,40 +94,7 @@ chmod +x setup.sh
 | Hosting | Render.com | Free server hosting |
 | Architecture | MVVM | Clean separation of concerns |
 
-## 📁 Project Structure
-
-```
-foundit-app/
-├── app/                          # Android Application
-│   ├── src/main/java/com/foundit/
-│   │   ├── data/                # Data layer
-│   │   │   ├── models/          # Data classes
-│   │   │   ├── repository/      # Firebase repositories
-│   │   │   └── firebase/        # Firebase implementations
-│   │   ├── domain/              # Business logic
-│   │   │   └── usecases/        # Use cases
-│   │   ├── presentation/        # UI layer
-│   │   │   ├── screens/         # All app screens
-│   │   │   ├── components/      # Reusable composables
-│   │   │   ├── viewmodels/      # ViewModels
-│   │   │   └── navigation/      # Navigation graph
-│   │   └── di/                  # Dependency injection
-│   ├── google-services.json     # Firebase config (gitignored)
-│   └── google-services.json.template  # Template for setup
-├── server/                      # Node.js notification server
-│   ├── index.js                # Server logic
-│   ├── package.json            # Dependencies
-│   ├── .env.template           # Environment template
-│   └── .env                    # Actual env (gitignored)
-├── docs/                       # Documentation
-├── screenshots/                # App screenshots
-├── .gitignore                  # Git ignore rules
-└── README.md                   # This file
-```
-
-## 🔧 Configuration
-
-### 1. Firebase Setup
+## Firebase Setup
 
 1. Create Firebase project
 2. Enable required services:
@@ -164,30 +103,6 @@ foundit-app/
    - Cloud Messaging
 3. Download `google-services.json` → `app/` folder
 
-### 2. Notification Server (Optional)
-
-```bash
-cd server
-cp .env.template .env
-# Edit .env with your Firebase credentials
-npm install
-# Deploy to Render.com (free)
-```
-
-### 3. Build Configuration
-
-Edit `app/build.gradle.kts` if needed:
-
-```kotlin
-android {
-    compileSdk = 34
-    defaultConfig {
-        applicationId = "com.foundit"
-        minSdk = 24
-        targetSdk = 34
-    }
-}
-```
 
 ## 📱 Features in Detail
 
@@ -208,46 +123,11 @@ android {
 - Real-time one-on-one chat
 - Unread message badges
 - Message history
-- Typing indicators
 
 ### Notifications
 - Push notifications via FCM
 - Badge synchronization
 - Background/foreground handling
-
-## 🧪 Testing
-
-```bash
-# Run unit tests
-./gradlew test
-
-# Run instrumented tests
-./gradlew connectedAndroidTest
-
-# Test coverage report
-./gradlew jacocoTestReport
-```
-
-## 🚢 Deployment
-
-### Generate Release APK
-
-```bash
-# Build release APK
-./gradlew assembleRelease
-
-# Build AAB for Play Store
-./gradlew bundleRelease
-```
-
-### Play Store Checklist
-
-- [ ] Update version code & name
-- [ ] Generate signed APK/AAB
-- [ ] Test on multiple devices
-- [ ] Update Firebase rules
-- [ ] Prepare store listing
-- [ ] Screenshots & description
 
 ## 📊 Performance
 
@@ -260,7 +140,6 @@ android {
 ### Network Efficiency
 - Firestore query optimization
 - Efficient real-time listeners
-- Offline capability
 - Request batching
 
 ### Memory Management
@@ -309,10 +188,9 @@ const val DEBUG_MODE = true  // Set to false for release
 
 | Role | Name | Contribution |
 |------|------|--------------|
-| Project Lead | John Riche D. Marchan | Architecture & Backend |
+| Project Lead | John Ralph V. Sarsaba | Documentation |
 | Lead Developer | Daniel Josh L. Navarro | Android Development |
-| UI/UX & Docs | John Ralph V. Sarsaba | Design & Documentation |
-| Research Adviser | John Patrick Eleria | Guidance & Review |
+| UI/UX & Docs | John Riche D. Marchan | Design & Documentation |
 
 ## 🤝 Contributing
 
@@ -368,21 +246,10 @@ SOFTWARE.
 
 ## 📞 Support
 
-- **Repository:** [github.com/yourusername/foundit-app](#)
+- **Repository:** [github.com/djnavz1423/foundit-app](#)
 - **Issues:** [GitHub Issues](#)
-- **Email:** your-team@example.com
-- **Documentation:** [Docs Folder](docs/)
+- **Email:** danielnavarro2444.com
 
-## 📚 Documentation Links
-
-- [Architecture Guide](docs/architecture.md)
-- [API Documentation](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-- [User Manual](docs/user-manual.md)
-
----
-
-<div align="center">
 
 ### 🏆 College Capstone Project
 **St. John Paul II College of Davao**  
@@ -401,7 +268,3 @@ SOFTWARE.
 - **Status:** ✅ Production Ready
 - **Last Updated:** December 2025
 - **Maintenance:** Active
-
-## 🌟 Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/foundit-app&type=Date)](https://star-history.com/#yourusername/foundit-app&Date)
