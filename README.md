@@ -34,11 +34,11 @@ A modern Android lost-and-found application built with Kotlin and Jetpack Compos
 
 ## 📸 Screenshots
 
-| Login Screen | Dashboard | Create Post |
+| Login Screen | Signup Screen | Dashboard |
 |:---:|:---:|:---:|
 | <img src="screenshots/login.jpg" width="200"> | <img src="screenshots/dashboard.jpg" width="200"> | <img src="screenshots/create_post.jpg" width="200"> |
 
-| Chat Screen | Profile | Notifications |
+| Create Post | Chat Screen | Profile |
 |:---:|:---:|:---:|
 | <img src="screenshots/chat.jpg" width="200"> | <img src="screenshots/profile.jpg" width="200"> | <img src="screenshots/notifications.jpg" width="200"> |
 
