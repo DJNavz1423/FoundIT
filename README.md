@@ -36,11 +36,11 @@ A modern Android lost-and-found application built with Kotlin and Jetpack Compos
 
 | Login Screen | Signup Screen | Dashboard |
 |:---:|:---:|:---:|
-| <img src="[screenshots/login.jpg](https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/login-frame.png)" width="200"> | <img src="[screenshots/dashboard.jpg](https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/signup-frame.png)" width="200"> | <img src="[screenshots/create_post.jpg](https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/dashb-frame.png)" width="200"> |
+| <img src="https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/login-frame.png" width="200"> | <img src="https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/signup-frame.png" width="200"> | <img src="https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/dashb-frame.png" width="200"> |
 
 | Create Post | Chat Screen | Profile |
 |:---:|:---:|:---:|
-| <img src="[screenshots/chat.jpg](https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/createPost_frame.png)" width="200"> | <img src="[screenshots/profile.jpg](https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/chat-frame.png)" width="200"> | <img src="[screenshots/notifications.jpg](https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/profile-frame.png)" width="200"> |
+| <img src="https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/createPost_frame.png" width="200"> | <img src="https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/chat-frame.png" width="200"> | <img src="https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/profile-frame.png" width="200"> |
 
 ## 🚀 Quick Start
 
