@@ -42,43 +42,34 @@ A modern Android lost-and-found application built with Kotlin and Jetpack Compos
 |:---:|:---:|:---:|
 | <img src="https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/createPost_frame.png" width="200"> | <img src="https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/chat-frame.png" width="200"> | <img src="https://github.com/DJNavz1423/FoundIT/blob/0602d09c87e0e5526d9fbd3d1b1acac18018910a/screenshots/profile-frame.png" width="200"> |
 
-## 🚀 Quick Start
+## 🚀 Quick Installation
 
-### Prerequisites
+### 📱 For USERS (Download & Install):
+1. **Download APK** from our latest release: https://github.com/djnavz1423/FoundIT/releases/tag/v1.0.0
+2. **Enable Unknown Sources** (if required):
+- Settings → Security → Unknown Sources → Enable
+
+3. **Install APK**:
+- Open downloaded `FoundIT.apk`
+- Tap "Install"
+- Launch the app!
+
+### 🔧 For DEVELOPERS (Build from Source):
+
+#### Prerequisites
 
 - Android Studio (2023.3.1+)
 - Firebase Account (Free)
 - Android Device/Emulator (API 34+)
 
-### Installation (3 Minutes)
-
-1. **Clone the repository**
-
+#### Setup Steps:
+1. **Clone & Configure:**
 ```bash
-git clone https://github.com/yourusername/foundit-app.git
-cd foundit-app
-```
+git clone https://github.com/djnavz1423/FoundIT.git
+cd FoundIT
 
-2. **Set up Firebase**
-
-   - Create project at [Firebase Console](https://console.firebase.google.com/)
-   - Enable: Authentication, Firestore, Cloud Messaging
-   - Download `google-services.json` → Place in `app/` folder
-
-3. **Build & Run**
-
-```bash
-./gradlew build
-```
-
-Run on emulator or physical device
-
-### 📱 One-Command Setup
-
-```bash
-# Run setup script (if available)
-chmod +x setup.sh
-./setup.sh
+# Copy template and configure
+cp app/google-services.json.template app/google-services.json
 ```
 
 ## 🛠️ Technology Stack
